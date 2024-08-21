@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-api
+  labels:
+    name: test-api
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-api-configmap
+  namespace: test-api
+data:
+  apiBasePath: "/test-api-2"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-api-deployment
+  namespace: test-api
+  labels:
+    app: test-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: test-api
+  template:
+    metadata:
+      labels:
+        app: test-api
+    spec:
+      containers:
+      - name: test-api
+        image: 349809444962.dkr.ecr.eu-central-1.amazonaws.com/test-api:0.0.4
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8080
+        env:
+        - name: API_BASE_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: test-api-configmap
+              key: apiBasePath
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-api
+  namespace: test-api
+  labels:
+    run: test-api
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: test-api
